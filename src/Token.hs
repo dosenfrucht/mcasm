@@ -3,6 +3,7 @@ module Token where
 data Token = Identifier String
            | Number Integer
            | Label String
+           | StringLit String
 
            -- Registers
 
@@ -80,5 +81,4 @@ data Token = Identifier String
            | ParenO
            | ParenC
            | EOL
-           | EOF
            deriving (Show, Eq)

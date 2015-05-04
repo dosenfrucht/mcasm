@@ -16,9 +16,16 @@ rawToTokens :: String -> [Token]
 rawToTokens s = case parse (spaces >> many1 parseFun) "mcasm" s of
                   Left  _   -> []
                   Right res -> res
- where parseFun = (identifier <|> readNumber <|> otherSymbol
+ where parseFun = (identifier <|> readNumber <|> stringLit <|> otherSymbol
                      <|> comment) >>= \tok ->
                   spaces >> return tok
+
+stringLit :: Parser Token
+stringLit = do
+  char '"'
+  content <- many1 $ noneOf "\""
+  char '"'
+  return $ StringLit content
 
 toTokens :: String -> [Token]
 toTokens s = removeTrailingEOL $ trimToks toks
@@ -143,7 +150,7 @@ readNumberOct = readNumbersystem 8 isOctDigit >>= \t ->
                 spaces >> return t
 
 readNumberHex :: Parser Token
-readNumberHex = readNumbersystem 8 isHexDigit >>= \t ->
+readNumberHex = readNumbersystem 16 isHexDigit >>= \t ->
                 spaces >> return t
 
 

@@ -4,6 +4,7 @@ import Data.Bits
 import Data.Word
 import Syntax
 import Token
+import Transform
 
 opcodeOp :: Token -> Word8
 opcodeOp tok = let (Just x) = lookup tok opList
@@ -98,10 +99,10 @@ opcodeBinopAddrImm tok = let (Just x) = lookup tok opList
             (STORE16, 0x07) ]
 
 integerToWord16 :: Integer -> Word16
-integerToWord16 = fromInteger
+integerToWord16 i = fromInteger $ i .&. 0xFFFF
 
 word16ToWord8 :: Word16 -> Word8
-word16ToWord8 = fromIntegral
+word16ToWord8 i = fromInteger $ toInteger i .&. 0xFF
 
 word16ToBytes :: Word16 -> [Word8]
 word16ToBytes w = higher : lower : []
@@ -112,7 +113,7 @@ integerToBytes :: Integer -> [Word8]
 integerToBytes = word16ToBytes . integerToWord16
 
 integerToWord8 :: Integer -> Word8
-integerToWord8 = fromInteger
+integerToWord8 i = fromInteger $ i .&. 0xFF
 
 word8ToInt :: Word8 -> Int
 word8ToInt = fromIntegral
@@ -124,20 +125,45 @@ addrToBytes :: Addr -> [Word8]
 addrToBytes (AddrReg r)      = (0x80 .|. integerToWord8 r) : [0x00, 0x00]
 addrToBytes (AddrConstant i) = 0x00 : immToBytes i
 
+magicNumber :: [Word8]
+magicNumber = [0x26, 0x03, 0x20, 0x13]
+
+generateHeader :: [AST] -> [Word8]
+generateHeader ast = len ++ [0x00, 0x00] ++ rawHeaders
+  where len       = integerToBytes . toInteger $ length headers
+        positions = readPositions 0 ast
+        headers   = getHeader `fmap` positions
+        rawHeaders = concat $ flattenHeader `fmap` headers
+        flattenHeader (a, b, c) = a ++ b ++ c ++ [0x00, 0x00]
+
+getHeader :: (Pos, Pos, [AST]) -> ([Word8], [Word8], [Word8])
+getHeader (raw, mapped, ast) = (integerToBytes raw, integerToBytes mapped, size)
+  where size         = integerToBytes $ getSize 0 remainingAst
+        remainingAst = takeWhile p ast
+        p (Position _) = False
+        p _            = True
+
 assemble :: [AST] -> [Word8]
-assemble []          = []
-assemble (Syntax.EOF:_)     = []
-assemble (Op tok:xs) = opcodeOp tok : 0x00 : assemble xs
-assemble (BinopRegReg op reg0 reg1 : xs) = opcodeBinopRegReg op :
-  integerToWord8 reg0 : 0x00 : integerToWord8 reg1 : assemble xs
-assemble (BinopRegImm op reg imm : xs) = opcodeBinopRegImm op :
-  integerToWord8 reg : immToBytes imm ++ assemble xs
-assemble (BinopAddrReg op addr reg : xs) = opcodeBinopAddrReg op :
-  addrToBytes addr ++ [0x00, integerToWord8 reg] ++ assemble xs
-assemble (BinopAddrImm op addr imm : xs) = opcodeBinopAddrImm op :
-  addrToBytes addr ++ immToBytes imm ++ assemble xs
-assemble (UnopReg op reg : xs) = opcodeUnopReg op : integerToWord8 reg :
-  assemble xs
-assemble (UnopImm op imm : xs) = opcodeUnopImm op : 0x00 : immToBytes imm ++
-  assemble xs
-assemble (Position i : xs) = 0x80 : 0x00 : integerToBytes i ++ assemble xs
+assemble ast = magicNumber ++ generateHeader ast ++ assembleAST nAst
+  where nAst = removePositions ast
+
+assembleAST :: [AST] -> [Word8]
+assembleAST []          = []
+assembleAST (Syntax.EOF:_)     = []
+assembleAST (Op tok:xs) = opcodeOp tok : 0x00 : assembleAST xs
+assembleAST (BinopRegReg op reg0 reg1 : xs) = opcodeBinopRegReg op :
+  integerToWord8 reg0 : 0x00 : integerToWord8 reg1 : assembleAST xs
+assembleAST (BinopRegImm op reg imm : xs) = opcodeBinopRegImm op :
+  integerToWord8 reg : immToBytes imm ++ assembleAST xs
+assembleAST (BinopAddrReg op addr reg : xs) = opcodeBinopAddrReg op :
+  addrToBytes addr ++ [0x00, integerToWord8 reg] ++ assembleAST xs
+assembleAST (BinopAddrImm op addr imm : xs) = opcodeBinopAddrImm op :
+  addrToBytes addr ++ immToBytes imm ++ assembleAST xs
+assembleAST (UnopReg op reg : xs) = opcodeUnopReg op : integerToWord8 reg :
+  assembleAST xs
+assembleAST (UnopImm op imm : xs) = opcodeUnopImm op : 0x00 : immToBytes imm ++
+  assembleAST xs
+assembleAST (Syntax.DB (Literal d) : xs) = integerToWord8 d : assembleAST xs
+assembleAST (Syntax.DW (Literal d) : xs) = integerToBytes d ++ assembleAST xs
+assembleAST (Syntax.RESB : xs) = 0x00 : assembleAST xs
+assembleAST (Position _ : xs) = assembleAST xs

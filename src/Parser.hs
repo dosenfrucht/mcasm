@@ -1,7 +1,10 @@
 module Parser where
 
 import Token
+import Generator
 import qualified Syntax as S
+
+import Data.Char
 
 parseAll :: [Token] -> [S.AST]
 parseAll [] = []
@@ -152,6 +155,17 @@ parseLine xs =
     (EOL : rest)     -> parseLine rest
     (Label s : rest) -> (S.PosLabel s, rest)
     (POSITION : Number _ : EOL : _) -> parsePosition xs
+    (TIMES : Number i : as) -> parseLine newRest
+      where newRest = concat (replicate (fromInteger i) lineS) ++ realRest
+            lineS   = takeWhile p as ++ [EOL]
+            lineLen = length lineS
+            realRest = drop (lineLen) as
+            p EOL = False
+            p _   = True
+    (DB : as) -> parseDB as
+    (DW : as) -> parseDW as
+    (RESB : EOL : xs) -> (S.RESB, xs)
+    (RESW : EOL : xs) -> (S.RESB, RESB : EOL : xs)
     (op : reg0 : Comma : reg1 : EOL : _)
       |    isBinopRegReg op
         && isReg reg0
@@ -177,11 +191,43 @@ parseLine xs =
     (op : EOL : rest)
       | isOp op -> (S.Op op, rest)
     [] -> (S.EOF, [])
-    s -> (S.Error $ "Invalid symbol or mnemonic: " ++ show s, rest)
+    (s:_) -> (S.Error $ "Invalid mnemonic operator combination or unexpected token: "
+                ++ show s, rest)
       where rest = safeTail $ dropWhile (/= EOL) xs
             safeTail []     = []
             safeTail (_:xs) = xs
 
+
+parseDB :: [Token] -> (S.AST, [Token])
+parseDB (Number n : Comma : xs) = (S.DB (S.Literal n), DB : xs)
+parseDB (Number n : EOL : xs)   = (S.DB (S.Literal n), xs)
+parseDB (Identifier i : Comma : xs) = (S.DW (S.Label i), DB : xs)
+parseDB (Identifier i : EOL : xs)   = (S.DW (S.Label i), xs)
+parseDB (StringLit [x]    : Comma : xs)  = (S.DB (S.Literal $ charToInteger x),
+                                             DB : xs)
+parseDB (StringLit (a:as) : Comma : xs)  = (S.DB (S.Literal $ charToInteger a),
+                                             DB : (StringLit as) :Comma : xs)
+parseDB (StringLit [x]    : EOL : xs)    = (S.DB (S.Literal $ charToInteger x),
+                                             xs)
+parseDB (StringLit (a:as) : EOL : xs)    = (S.DB (S.Literal $ charToInteger a),
+                                             DB : (StringLit as) : EOL : xs)
+
+parseDW :: [Token] -> (S.AST, [Token])
+parseDW (Number n : Comma : xs) = (S.DW (S.Literal n), DW : xs)
+parseDW (Number n : EOL : xs)   = (S.DW (S.Literal n), xs)
+parseDW (Identifier i : Comma : xs) = (S.DW (S.Label i), DW : xs)
+parseDW (Identifier i : EOL : xs)   = (S.DW (S.Label i), xs)
+parseDW (StringLit [x]    : Comma : xs)  = (S.DB (S.Literal $ charToInteger x),
+                                             DW : xs)
+parseDW (StringLit (a:as) : Comma : xs)  = (S.DB (S.Literal $ charToInteger a),
+                                             DW : (StringLit as) : Comma : xs)
+parseDW (StringLit [x]    : EOL : xs)    = (S.DB (S.Literal $ charToInteger x),
+                                             xs)
+parseDW (StringLit (a:as) : EOL : xs)    = (S.DB (S.Literal $ charToInteger a),
+                                             DW : (StringLit as) : EOL : xs)
+
+charToInteger :: Char -> Integer
+charToInteger = toInteger . ord
 
 parsePosition :: [Token] -> (S.AST, [Token])
 parsePosition (POSITION : Number i : EOL : xs) = (ast, xs)

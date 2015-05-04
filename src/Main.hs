@@ -9,7 +9,11 @@ import Generator
 
 import System.IO
 import System.Environment
+import System.Exit
 import Data.Char
+import Data.Word
+
+import Numeric (showHex)
 
 version :: String
 version = "0.0"
@@ -27,21 +31,55 @@ hasErrors ast = not . null . filter p $ ast
         p _         = False
 
 printErrors :: [AST] -> IO ()
-printErrors ast = mapM_ putStrLn errors
+printErrors ast = mapM_ (hPutStrLn stderr) errors
   where errors = map (\(Error s) -> s) $ filter p ast
         p (Error _) = True
         p _         = False
 
+printHex :: [Word8] -> IO ()
+printHex []     = return ()
+printHex [x]    = putStr $ showHx x
+printHex (x:xs) = (putStr $ showHx x) >> putChar ' ' >> printHex xs
+
+showHx :: Word8 -> String
+showHx x = if length hex == 1
+            then '0' : hex
+            else hex
+  where hex = showHex x ""
+
+getInput :: [String] -> String
+getInput []          = []
+getInput ("-v":xs)   = getInput xs
+getInput ("-o":_:xs) = getInput xs
+getInput ("-o":xs)   = getInput xs
+getInput (x:xs)      = x
+
+getVerbose :: [String] -> Bool
+getVerbose = ("-v" `elem`)
+
+getOutput :: [String] -> String
+getOutput []          = []
+getOutput ("-o":x:_) = x
+getOutput (_:xs)      = getOutput xs
+
 main :: IO ()
 main = do
   args <- getArgs
-  src <- readFile "test.asm"
+  let input   = getInput args
+      output  = case getOutput args of
+                  [] -> "a.mcbin"
+                  x  -> x
+      verbose = getVerbose args
+  if null input
+   then hPutStrLn stderr "No input file given" >> exitFailure
+   else return ()
+  src <- readFile input
   let ast = getAst src
   if hasErrors ast
    then printErrors ast
    else let assembledData = assemble ast
         in do
-             writeFile "test.mcbin" (map (chr . word8ToInt) assembledData)
-             if "-v" `elem` args
-              then print assembledData
+             writeFile output (map (chr . word8ToInt) assembledData)
+             if verbose
+              then printHex assembledData >> putStrLn ""
               else return ()

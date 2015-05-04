@@ -28,5 +28,10 @@ data AST = BinopRegReg Token Reg Reg
 
          | EOF
 
+         | DB Imm
+         | DW Imm
+
+         | RESB
+
          | Error String
          deriving (Show)
