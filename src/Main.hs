@@ -13,10 +13,12 @@ import System.Exit
 import Data.Char
 import Data.Word
 
+import qualified Data.ByteString.Lazy as BS
+
 import Numeric (showHex)
 
 version :: String
-version = "0.0"
+version = "1.0"
 
 getAst :: String -> [AST]
 getAst src = let toks   = toTokens src ++ [EOL]
@@ -79,7 +81,7 @@ main = do
    then printErrors ast
    else let assembledData = assemble ast
         in do
-             writeFile output (map (chr . word8ToInt) assembledData)
+             BS.writeFile output $ BS.pack assembledData
              if verbose
               then printHex assembledData >> putStrLn ""
               else return ()

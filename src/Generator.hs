@@ -40,7 +40,7 @@ opcodeUnopImm tok = let (Just x) = lookup tok opList
   where opList =
           [ (PUSH8, 0x09),
             (PUSH16, 0x0B),
-            (CALL, 0x2),
+            (CALL, 0x29),
             (INT, 0x2D),
             (JMP, 0x33),
             (JE, 0x35),

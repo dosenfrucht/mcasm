@@ -8,4 +8,5 @@ executable mcasm
   hs-source-dirs:  src
   build-depends:   base,
                    parsec,
-                   containers
+                   containers,
+                   bytestring
