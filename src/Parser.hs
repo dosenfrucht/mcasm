@@ -84,7 +84,9 @@ isUnopImm = (`elem` unopImms)
 isOp :: Token -> Bool
 isOp = (`elem` ops)
   where ops =
-          [ RET,
+          [ PUSHA,
+            POPA,
+            RET,
             NOP,
             IRET,
             HLT ]
@@ -116,8 +118,8 @@ isReg = (`elem` regs)
             R11,
             R12,
             R13,
-            RFLAGS,
-            RIP ]
+            R14,
+            R15 ]
 
 regToAST :: Token -> S.Reg
 regToAST reg = let (Just i) = lookup reg regList
@@ -137,8 +139,8 @@ regToAST reg = let (Just i) = lookup reg regList
 	    (R11, 11),
 	    (R12, 12),
 	    (R13, 13),
-	    (RFLAGS, 14),
-	    (RIP, 15) ]
+	    (R14, 14),
+	    (R15, 15) ]
 
 isAddr :: Token -> Bool
 isAddr t | isReg t    = True

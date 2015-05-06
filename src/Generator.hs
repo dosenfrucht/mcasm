@@ -10,7 +10,9 @@ opcodeOp :: Token -> Word8
 opcodeOp tok = let (Just x) = lookup tok opList
                in x
   where opList =
-          [ (RET, 0x2A),
+          [ (PUSHA, 0x0E),
+            (POPA, 0x0F),
+            (RET, 0x2A),
             (NOP, 0x2B),
             (IRET, 0x2E),
             (HLT, 0x2F) ]

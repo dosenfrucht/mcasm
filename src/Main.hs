@@ -54,7 +54,7 @@ getInput []          = []
 getInput ("-v":xs)   = getInput xs
 getInput ("-o":_:xs) = getInput xs
 getInput ("-o":xs)   = getInput xs
-getInput (x:xs)      = x
+getInput (x:_)      = x
 
 getVerbose :: [String] -> Bool
 getVerbose = ("-v" `elem`)

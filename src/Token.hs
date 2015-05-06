@@ -21,8 +21,8 @@ data Token = Identifier String
            | R11
            | R12
            | R13
-           | RFLAGS
-           | RIP
+           | R14
+           | R15
 
            -- Mnemonics
 
@@ -35,6 +35,8 @@ data Token = Identifier String
            | PUSH16
            | POP8
            | POP16
+           | PUSHA
+           | POPA
 
            | ADD
            | SUB

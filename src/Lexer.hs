@@ -59,8 +59,8 @@ identifier = do
                        "r11"    -> R11
                        "r12"    -> R12
                        "r13"    -> R13
-                       "rflags" -> RFLAGS
-                       "rip"    -> RIP
+                       "r14"    -> R14
+                       "r15"    -> R15
 
                        -- Mnemonics
                        "mov"     -> MOV
@@ -72,6 +72,8 @@ identifier = do
                        "push16"  -> PUSH16
                        "pop8"    -> POP8
                        "pop16"   -> POP16
+                       "pusha"   -> PUSHA
+                       "popa"    -> POPA
 
                        "add"     -> ADD
                        "sub"     -> SUB
