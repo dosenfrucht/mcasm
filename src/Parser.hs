@@ -176,6 +176,12 @@ parseLine xs =
       |    isBinopRegImm op
         && isReg reg
         && isImm imm -> parseBinopRegImm xs
+    (op : ParenO : to : Plus : offset : ParenC : Comma : val : EOL : as) ->
+      parseLine (ADD : to : Comma : offset : EOL : op : ParenO : to : ParenC :
+                  Comma : val : EOL : SUB : to : Comma : offset : EOL : as)
+    (op : ParenO : to : Minus : offset : ParenC : Comma : val : EOL : as) ->
+      parseLine (SUB : to : Comma : offset : EOL : op : ParenO : to : ParenC :
+                  Comma : val : EOL : ADD : to : Comma : offset : EOL : as)
     (op : ParenO : to : ParenC : Comma : reg : EOL : _)
       |    isBinopAddrReg op
         && isAddr to

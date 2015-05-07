@@ -79,6 +79,9 @@ data Token = Identifier String
 
            -- Symbols
 
+           | Plus
+           | Minus
+
            | Comma
            | ParenO
            | ParenC

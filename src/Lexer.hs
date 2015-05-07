@@ -16,8 +16,8 @@ rawToTokens :: String -> [Token]
 rawToTokens s = case parse (spaces >> many1 parseFun) "mcasm" s of
                   Left  _   -> []
                   Right res -> res
- where parseFun = (identifier <|> readNumber <|> stringLit <|> otherSymbol
-                     <|> comment) >>= \tok ->
+ where parseFun = (identifier <|> readNumber <|> stringLit <|> comment
+                     <|> otherSymbol) >>= \tok ->
                   spaces >> return tok
 
 stringLit :: Parser Token
@@ -114,10 +114,12 @@ identifier = do
 
 otherSymbol :: Parser Token
 otherSymbol = do
-  tok <-     try (char ',' >> return Comma)
-         <|> try (char '[' >> return ParenO)
-         <|> try (char '\n' >> return EOL)
+  tok <-     (char ',' >> return Comma)
+         <|> (char '[' >> return ParenO)
+         <|> (char '\n' >> return EOL)
          <|> (char ']' >> return ParenC)
+         <|> (char '+' >> return Plus)
+         <|> (char '-' >> return Minus)
   return tok
 
 

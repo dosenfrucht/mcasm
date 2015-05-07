@@ -1,42 +1,34 @@
--- data at 0x0010
-position 0x0010
-str:
-    db "Hello, world."
-times 3 db 0
-
-
--- code entry
-position 0x0
-boot:
-    mov rdi, str
-    mov rsi, 13
-    call print_string
-    hlt
-
--- functions
 position 0x8000
+text:  db "Hello World.", 0x0A, 0x00
 
-
--- print_string(char* c, int i)
---   if i == 0
---    then ()
---    else print_char(*c) >> print_string(c + 1, i - 1)
-print_string:
-    cmp rsi, 0
-    je  print_string.if0_false
-    jmp print_string.if0_true
+position 0x00
+_start:
+  mov rdi, text
+  call print_string
+  hlt
   
-  print_string.if0_false:
-    ret
+print_string:
+  load8 [rdi], rax
+  cmp rax, 0
+  je print_string.null
+  jmp print_string.not_null
+  
+ print_string.null:
+  ret
  
-  print_string.if0_true:
-    mov r8, rdi
-    load8 [rdi], rdi
-    call print_char
-    mov rdi, r8
-    sub rsi, 1
-    add rdi, 1
-    jmp print_string
+ print_string.not_null:
+  push16 rdi
+  mov rdi, rax
+  call put_char
+  pop16 rdi
+  add rdi, 1
+  jmp print_string
 
-print_char:
- -- add logic for printing a character
+
+put_char:
+  push16 rax
+  mov rax, rdi
+  int 26
+  pop16 rax
+  ret
+  
