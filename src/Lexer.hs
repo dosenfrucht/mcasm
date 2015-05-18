@@ -16,7 +16,7 @@ rawToTokens :: String -> [Token]
 rawToTokens s = case parse (spaces >> many1 parseFun) "mcasm" s of
                   Left  _   -> []
                   Right res -> res
- where parseFun = (identifier <|> readNumber <|> stringLit <|> comment
+ where parseFun = (identifier <|> readNumber <|> stringLit <|> try comment
                      <|> otherSymbol) >>= \tok ->
                   spaces >> return tok
 
