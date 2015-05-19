@@ -64,6 +64,9 @@ getOutput []          = []
 getOutput ("-o":x:_) = x
 getOutput (_:xs)      = getOutput xs
 
+getAST :: [String] -> Bool
+getAST = ("-p" `elem`)
+
 main :: IO ()
 main = do
   args <- getArgs
@@ -72,6 +75,7 @@ main = do
                   [] -> "a.mcbin"
                   x  -> x
       verbose = getVerbose args
+      printAst = getAST args
   if null input
    then hPutStrLn stderr "No input file given" >> exitFailure
    else return ()
@@ -84,4 +88,7 @@ main = do
              BS.writeFile output $ BS.pack assembledData
              if verbose
               then printHex assembledData >> putStrLn ""
+              else return ()
+             if printAst
+              then print ast
               else return ()
